@@ -1,0 +1,324 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #0a0a12 0%, #12121f 50%, #0a0a12 100%);
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    color: #ffffff;
+    overflow: hidden;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    font-size: 1.8rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+header p {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+.game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.score-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.2rem;
+    color: #a78bfa;
+}
+
+.backpack-icon {
+    display: flex;
+    align-items: center;
+    color: #a78bfa;
+}
+
+#game-area {
+    position: relative;
+    width: 800px;
+    height: 500px;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a12 100%);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#paths-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+#paths-layer svg {
+    width: 100%;
+    height: 100%;
+}
+
+#icons-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.icon-item {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, opacity 0.3s ease;
+}
+
+.icon-item.collected {
+    animation: collect-icon 0.4s ease-out forwards;
+}
+
+@keyframes collect-icon {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+        z-index: 50;
+    }
+    100% {
+        transform: scale(5);
+        opacity: 0;
+        z-index: 150;
+    }
+}
+
+.icon-item svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Icon colors matching the image */
+.icon-item[data-type="lock"] { color: #a78bfa; }
+.icon-item[data-type="diamond"] { color: #f472b6; }
+.icon-item[data-type="coffee"] { color: #fb923c; }
+.icon-item[data-type="gift"] { color: #4ade80; }
+.icon-item[data-type="shopping-cart"] { color: #22d3d8; }
+.icon-item[data-type="plane"] { color: #60a5fa; }
+.icon-item[data-type="utensils"] { color: #f87171; }
+.icon-item[data-type="music"] { color: #c084fc; }
+.icon-item[data-type="heart"] { color: #fb7185; }
+.icon-item[data-type="star"] { color: #fbbf24; }
+.icon-item[data-type="key"] { color: #fcd34d; }
+.icon-item[data-type="home"] { color: #34d399; }
+.icon-item[data-type="car"] { color: #38bdf8; }
+.icon-item[data-type="ticket"] { color: #e879f9; }
+.icon-item[data-type="gamepad"] { color: #a78bfa; }
+.icon-item[data-type="shopping-bag"] { color: #2dd4bf; }
+.icon-item[data-type="credit-card"] { color: #60a5fa; }
+.icon-item[data-type="smartphone"] { color: #94a3b8; }
+.icon-item[data-type="headphones"] { color: #f472b6; }
+.icon-item[data-type="pizza"] { color: #fb923c; }
+.icon-item[data-type="book"] { color: #a78bfa; }
+.icon-item[data-type="camera"] { color: #fbbf24; }
+.icon-item[data-type="palette"] { color: #f472b6; }
+.icon-item[data-type="dumbbell"] { color: #4ade80; }
+
+/* Static credit card in center */
+#card {
+    position: absolute;
+    width: 120px;
+    height: 75px;
+    background: linear-gradient(145deg, #2a2a3a 0%, #1a1a2a 100%);
+    border-radius: 10px;
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+}
+
+.card-chip {
+    position: absolute;
+    top: 12px;
+    left: 15px;
+    width: 20px;
+    height: 16px;
+    border: 2px solid #6b7280;
+    border-radius: 4px;
+}
+
+.card-text {
+    position: absolute;
+    top: 14px;
+    right: 12px;
+    font-size: 7px;
+    color: #9ca3af;
+    letter-spacing: 0.5px;
+}
+
+.mastercard-logo {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    display: flex;
+}
+
+.mastercard-logo .circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+.mastercard-logo .circle:first-child {
+    background: #eb001b;
+}
+
+.mastercard-logo .circle:last-child {
+    background: #f79e1b;
+    margin-left: -8px;
+}
+
+/* Player backpack */
+#player {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    filter: drop-shadow(0 0 10px rgba(227, 62, 63, 0.6));
+}
+
+#player svg {
+    width: 33px;
+    height: 48px;
+    transition: transform 0.15s ease-out;
+}
+
+/* Direction rotations - mouth opens on the right side of the SVG, so rotate accordingly */
+#player.dir-right svg { transform: rotate(0deg); }
+#player.dir-down svg { transform: rotate(90deg); }
+#player.dir-left svg { transform: scaleX(-1); }
+#player.dir-up svg { transform: rotate(-90deg); }
+
+/* Backpack parts for chomping */
+/* Pivot from the left side of the gap */
+#player .backpack-top {
+    transform-origin: 0px 10.5px;
+    animation: chomp-top 0.6s ease-in-out infinite;
+}
+
+#player .backpack-bottom {
+    transform-origin: 0px 11.6px;
+    animation: chomp-bottom 0.6s ease-in-out infinite;
+}
+
+@keyframes chomp-top {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-8deg); }
+}
+
+@keyframes chomp-bottom {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(8deg); }
+}
+
+.instructions {
+    color: #6b7280;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+kbd {
+    background: #1a1a2a;
+    border: 1px solid #3a3a4a;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    transition: all 0.1s ease;
+}
+
+kbd.active {
+    background: #E33E3F;
+    border-color: #E33E3F;
+    color: white;
+    box-shadow: 0 0 10px rgba(227, 62, 63, 0.5);
+}
+
+/* Path styling */
+.path-line {
+    stroke: #2a2a4a;
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
+    fill: none;
+}
+
+/* Win message */
+.win-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 40px 60px;
+    border-radius: 16px;
+    text-align: center;
+    z-index: 200;
+    border: 2px solid #a78bfa;
+}
+
+.win-message h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: #a78bfa;
+}
+
+.win-message p {
+    color: #9ca3af;
+    margin-bottom: 20px;
+}
+
+.win-message button {
+    background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.win-message button:hover {
+    transform: scale(1.05);
+}
