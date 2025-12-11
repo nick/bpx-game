@@ -343,4 +343,12 @@ kbd.active {
 
 .lose-message {
     border-color: #f87171 !important;
+    padding: 20px !important;
+}
+
+.lose-message video {
+    max-width: 300px;
+    max-height: 200px;
+    border-radius: 8px;
+    margin-bottom: 15px;
 }

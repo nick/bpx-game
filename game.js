@@ -560,9 +560,9 @@ function loseGame() {
     const loseMessage = document.createElement('div');
     loseMessage.className = 'win-message lose-message';
     loseMessage.innerHTML = `
-        <h2>Game Over!</h2>
-        <p>The bear got you!</p>
-        <p>Score: ${score}</p>
+        <video autoplay loop muted playsinline>
+            <source src="fail.mp4" type="video/mp4">
+        </video>
         <button onclick="restartGame()">Try Again</button>
     `;
     gameArea.appendChild(loseMessage);
