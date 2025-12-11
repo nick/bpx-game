@@ -21,6 +21,14 @@ const ICON_TYPES = [
     'headphones', 'pizza', 'book-open', 'camera', 'palette', 'dumbbell'
 ];
 
+// Movement speeds (pixels per frame)
+const PLAYER_SPEED = 3;
+const BADDIE_SPEED = 2;
+
+// Baddie configuration
+const BADDIE_SIZE = 40;
+const NUM_BADDIES = 2;
+
 // Game state
 let player = {
     gridCol: 0,  // Current grid column
@@ -33,11 +41,13 @@ let player = {
     direction: 'right' // Current facing direction
 };
 let icons = [];
+let baddies = [];
 let score = 0;
 let keysPressed = {};
 let lastKeyTime = 0;
 let gameLoop;
 let gameWon = false;
+let gameOver = false;
 
 // Card center position (grid coordinates)
 const CARD_CENTER_COL = Math.floor(GRID_COLS / 2);
@@ -85,9 +95,11 @@ function init() {
     setPlayerDirection('right');
     createGrid();
     createPaths();
+    createBaddies();
     setupControls();
     lucide.createIcons();
     startGameLoop();
+    startBaddieMovement();
 }
 
 // Update player DOM position
@@ -148,6 +160,160 @@ function createGrid() {
             icons.push(iconData);
         }
     }
+}
+
+// Create baddies (bears) that follow the player
+function createBaddies() {
+    const gameArea = document.getElementById('game-area');
+
+    // Remove existing baddies
+    baddies.forEach(baddie => {
+        if (baddie.element) baddie.element.remove();
+    });
+    baddies = [];
+
+    // Find valid spawn positions (far from player)
+    const validPositions = [];
+    for (let row = 0; row < GRID_ROWS; row++) {
+        for (let col = 0; col < GRID_COLS; col++) {
+            if (!isBlockedByCard(col, row) && !(col === 0 && row === 0)) {
+                // Prefer positions far from player start
+                const dist = Math.abs(col) + Math.abs(row);
+                if (dist >= 4) {
+                    validPositions.push({ col, row });
+                }
+            }
+        }
+    }
+
+    shuffleArray(validPositions);
+
+    for (let i = 0; i < NUM_BADDIES && i < validPositions.length; i++) {
+        const pos = validPositions[i];
+        const pixelPos = gridToPixel(pos.col, pos.row);
+
+        const baddie = {
+            gridCol: pos.col,
+            gridRow: pos.row,
+            x: pixelPos.x,
+            y: pixelPos.y,
+            targetCol: pos.col,
+            targetRow: pos.row,
+            moving: false,
+            element: null
+        };
+
+        const baddieEl = document.createElement('div');
+        baddieEl.className = 'baddie';
+        baddieEl.textContent = '🐻';
+        baddieEl.style.left = (pixelPos.x - BADDIE_SIZE / 2) + 'px';
+        baddieEl.style.top = (pixelPos.y - BADDIE_SIZE / 2) + 'px';
+
+        gameArea.appendChild(baddieEl);
+        baddie.element = baddieEl;
+        baddies.push(baddie);
+    }
+}
+
+// Start baddie movement (no longer uses interval)
+function startBaddieMovement() {
+    // Baddies now move continuously in the game loop
+}
+
+// Choose next target for a baddie
+function chooseBaddieTarget(baddie) {
+    // Calculate direction to player
+    const dx = player.gridCol - baddie.gridCol;
+    const dy = player.gridRow - baddie.gridRow;
+
+    // Possible moves towards player
+    const moves = [];
+    if (dx > 0 && isValidBaddiePosition(baddie.gridCol + 1, baddie.gridRow, baddie)) {
+        moves.push({ col: baddie.gridCol + 1, row: baddie.gridRow, priority: Math.abs(dx) });
+    }
+    if (dx < 0 && isValidBaddiePosition(baddie.gridCol - 1, baddie.gridRow, baddie)) {
+        moves.push({ col: baddie.gridCol - 1, row: baddie.gridRow, priority: Math.abs(dx) });
+    }
+    if (dy > 0 && isValidBaddiePosition(baddie.gridCol, baddie.gridRow + 1, baddie)) {
+        moves.push({ col: baddie.gridCol, row: baddie.gridRow + 1, priority: Math.abs(dy) });
+    }
+    if (dy < 0 && isValidBaddiePosition(baddie.gridCol, baddie.gridRow - 1, baddie)) {
+        moves.push({ col: baddie.gridCol, row: baddie.gridRow - 1, priority: Math.abs(dy) });
+    }
+
+    if (moves.length > 0) {
+        // Sort by priority (prefer the axis with greater distance)
+        moves.sort((a, b) => b.priority - a.priority);
+        // Add some randomness
+        const move = Math.random() < 0.7 ? moves[0] : moves[Math.floor(Math.random() * moves.length)];
+
+        baddie.targetCol = move.col;
+        baddie.targetRow = move.row;
+        baddie.moving = true;
+    }
+}
+
+// Check if position is valid for baddie (not blocked, within bounds, not occupied by another baddie)
+function isValidBaddiePosition(col, row, currentBaddie) {
+    if (!isValidPosition(col, row)) {
+        return false;
+    }
+    // Check if another baddie is at or moving to this position
+    for (const baddie of baddies) {
+        if (baddie === currentBaddie) continue;
+        if ((baddie.gridCol === col && baddie.gridRow === row) ||
+            (baddie.targetCol === col && baddie.targetRow === row)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Update baddie position (called in game loop)
+function updateBaddies() {
+    baddies.forEach(baddie => {
+        // If not moving, choose a new target
+        if (!baddie.moving) {
+            chooseBaddieTarget(baddie);
+        }
+
+        if (baddie.moving) {
+            const target = gridToPixel(baddie.targetCol, baddie.targetRow);
+            const dx = target.x - baddie.x;
+            const dy = target.y - baddie.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < BADDIE_SPEED) {
+                // Arrived at target
+                baddie.x = target.x;
+                baddie.y = target.y;
+                baddie.gridCol = baddie.targetCol;
+                baddie.gridRow = baddie.targetRow;
+                baddie.moving = false;
+            } else {
+                // Move towards target at constant speed
+                baddie.x += (dx / distance) * BADDIE_SPEED;
+                baddie.y += (dy / distance) * BADDIE_SPEED;
+            }
+
+            baddie.element.style.left = (baddie.x - BADDIE_SIZE / 2) + 'px';
+            baddie.element.style.top = (baddie.y - BADDIE_SIZE / 2) + 'px';
+        }
+    });
+}
+
+// Check if player collides with baddie (using pixel distance for smooth collision)
+function checkBaddieCollision() {
+    const collisionDistance = 25; // pixels
+    for (const baddie of baddies) {
+        const dx = baddie.x - player.x;
+        const dy = baddie.y - player.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < collisionDistance) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Create connecting paths between icons
@@ -286,6 +452,8 @@ function startGameLoop() {
 
 // Update game state
 function update() {
+    if (gameOver) return;
+
     // Animate player movement
     if (player.moving) {
         const target = gridToPixel(player.targetCol, player.targetRow);
@@ -293,7 +461,7 @@ function update() {
         const dy = target.y - player.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < 5) {
+        if (distance < PLAYER_SPEED) {
             // Arrived at target
             player.x = target.x;
             player.y = target.y;
@@ -312,14 +480,22 @@ function update() {
             } else if (keysPressed['arrowright'] || keysPressed['d']) {
                 handleMovement('arrowright');
             }
-        } else if (distance > 0) {
-            // Move towards target
-            const speed = 8;
-            player.x += (dx / distance) * speed;
-            player.y += (dy / distance) * speed;
+        } else {
+            // Move towards target at constant speed
+            player.x += (dx / distance) * PLAYER_SPEED;
+            player.y += (dy / distance) * PLAYER_SPEED;
         }
 
         updatePlayerPosition();
+    }
+
+    // Update baddies
+    updateBaddies();
+
+    // Check collision with baddies
+    if (checkBaddieCollision()) {
+        loseGame();
+        return;
     }
 
     // Check collisions with icons
@@ -376,6 +552,22 @@ function winGame() {
     gameArea.appendChild(winMessage);
 }
 
+// Lose the game (caught by baddie)
+function loseGame() {
+    gameOver = true;
+
+    const gameArea = document.getElementById('game-area');
+    const loseMessage = document.createElement('div');
+    loseMessage.className = 'win-message lose-message';
+    loseMessage.innerHTML = `
+        <h2>Game Over!</h2>
+        <p>The bear got you!</p>
+        <p>Score: ${score}</p>
+        <button onclick="restartGame()">Try Again</button>
+    `;
+    gameArea.appendChild(loseMessage);
+}
+
 // Restart the game
 function restartGame() {
     // Reset state
@@ -391,10 +583,11 @@ function restartGame() {
 
     score = 0;
     gameWon = false;
+    gameOver = false;
 
-    // Remove win message
-    const winMessage = document.querySelector('.win-message');
-    if (winMessage) winMessage.remove();
+    // Remove win/lose message
+    const message = document.querySelector('.win-message');
+    if (message) message.remove();
 
     // Reset UI
     updateScore();
@@ -402,7 +595,9 @@ function restartGame() {
     setPlayerDirection('right');
     setPlayerMoving(false);
     createGrid();
+    createBaddies();
     lucide.createIcons();
+    startBaddieMovement();
 }
 
 // Utility: Shuffle array

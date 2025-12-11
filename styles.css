@@ -322,3 +322,25 @@ kbd.active {
 .win-message button:hover {
     transform: scale(1.05);
 }
+
+/* Baddies (bears) */
+.baddie {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    z-index: 90;
+    filter: drop-shadow(0 0 8px rgba(139, 69, 19, 0.6));
+}
+
+/* Lose message styling */
+.lose-message h2 {
+    color: #f87171 !important;
+}
+
+.lose-message {
+    border-color: #f87171 !important;
+}
