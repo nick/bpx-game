@@ -194,6 +194,7 @@ header p {
     top: 50%;
     transform: translate(-50%, -50%);
     z-index: 50;
+    animation: cardFloat 6s ease-in-out infinite;
 }
 
 #card img {
@@ -201,8 +202,47 @@ header p {
     width: auto;
     display: block;
     border-radius: 12px;
-    border: 1px solid rgba(244, 244, 246, 0.05);
-    box-shadow: 0 4px 40px 0 rgba(255, 255, 255, 0.05), 0 0 2px 0 rgba(255, 255, 255, 0.20) inset, 0 12px 12px 0 rgba(0, 0, 0, 0.20);
+    border: 1px solid rgba(244, 244, 246, 0.1);
+    box-shadow:
+        0 4px 40px 0 rgba(255, 255, 255, 0.05),
+        0 0 2px 0 rgba(255, 255, 255, 0.20) inset,
+        0 20px 40px -10px rgba(0, 0, 0, 0.5),
+        0 10px 20px -5px rgba(0, 0, 0, 0.3);
+}
+
+#card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 12px;
+    background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.015) 45%,
+        rgba(255, 255, 255, 0.03) 50%,
+        rgba(255, 255, 255, 0.015) 55%,
+        transparent 60%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 15s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes cardFloat {
+    0%, 100% {
+        transform: translate(-50%, -50%) translateY(0) rotateX(1deg) rotateY(-1deg);
+    }
+    50% {
+        transform: translate(-50%, -50%) translateY(-2px) rotateX(-1deg) rotateY(1deg);
+    }
+}
+
+@keyframes shimmer {
+    0%, 100% { background-position: 200% 0; }
+    50% { background-position: -200% 0; }
 }
 
 #start-prompt {

@@ -23,7 +23,7 @@ const ICON_TYPES = [
 
 // Movement speeds (pixels per frame)
 const PLAYER_SPEED = 3;
-const BADDIE_SPEED = PLAYER_SPEED;
+const BADDIE_SPEED = 2.5;
 
 // Baddie configuration
 const BADDIE_SIZE = 40;
@@ -235,7 +235,7 @@ function chooseBaddieTarget(baddie) {
     const playerCol = player.moving ? player.targetCol : player.gridCol;
     const playerRow = player.moving ? player.targetRow : player.gridRow;
 
-    
+
     // Check what axis the other baddie is moving on (for tiebreaker only)
     const otherBaddie = baddies.find(b => b !== baddie);
     const otherClosingHorizontally = otherBaddie && otherBaddie.moving && otherBaddie.targetCol !== otherBaddie.gridCol;
