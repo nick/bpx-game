@@ -48,6 +48,7 @@ let lastKeyTime = 0;
 let gameLoop;
 let gameWon = false;
 let gameOver = false;
+let gameStarted = false;
 
 // Card center position (grid coordinates)
 const CARD_CENTER_COL = Math.floor(GRID_COLS / 2);
@@ -61,11 +62,15 @@ function gridToPixel(col, row) {
     };
 }
 
-// Check if a grid position is blocked by the card
+// Check if a grid position is blocked by the card or other gaps
 function isBlockedByCard(col, row) {
-    // Card occupies positions around center
-    return (col >= CARD_CENTER_COL - 1 && col <= CARD_CENTER_COL + 1) &&
-           (row === CARD_CENTER_ROW);
+    // Grid gaps (including card positions)
+    const blockedPositions = [
+        [1, 1], [1, 3],
+        [6, 1], [6, 3],
+        [3, 2], [4, 2],
+    ];
+    return blockedPositions.some(([c, r]) => col === c && row === r);
 }
 
 // Check if a grid position is valid (within bounds and not blocked)
@@ -205,7 +210,11 @@ function createBaddies() {
 
         const baddieEl = document.createElement('div');
         baddieEl.className = 'baddie';
-        baddieEl.textContent = '🐻';
+        if (window.location.search.includes('phantom')) {
+            baddieEl.innerHTML = '<svg width="55" height="50" viewBox="45 45 110 95" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M89.1138 112.613C83.1715 121.719 73.2139 133.243 59.9641 133.243C53.7005 133.243 47.6777 130.665 47.6775 119.464C47.677 90.9369 86.6235 46.777 122.76 46.7764C143.317 46.776 151.509 61.0389 151.509 77.2361C151.509 98.0264 138.018 121.799 124.608 121.799C120.352 121.799 118.264 119.462 118.264 115.756C118.264 114.789 118.424 113.741 118.746 112.613C114.168 120.429 105.335 127.683 97.0638 127.683C91.0411 127.683 87.9898 123.895 87.9897 118.576C87.9897 116.642 88.3912 114.628 89.1138 112.613ZM115.936 68.7103C112.665 68.7161 110.435 71.4952 110.442 75.4598C110.449 79.4244 112.689 82.275 115.96 82.2693C119.152 82.2636 121.381 79.4052 121.374 75.4405C121.367 71.4759 119.128 68.7047 115.936 68.7103ZM133.287 68.6914C130.016 68.6972 127.786 71.4763 127.793 75.4409C127.8 79.4055 130.039 82.2561 133.311 82.2504C136.503 82.2448 138.732 79.3863 138.725 75.4216C138.718 71.457 136.479 68.6858 133.287 68.6914Z" fill="currentColor"></path></svg>';
+        } else {
+            baddieEl.textContent = '🐻';
+        }
         baddieEl.style.left = (pixelPos.x - BADDIE_SIZE / 2) + 'px';
         baddieEl.style.top = (pixelPos.y - BADDIE_SIZE / 2) + 'px';
 
@@ -271,6 +280,8 @@ function isValidBaddiePosition(col, row, currentBaddie) {
 
 // Update baddie position (called in game loop)
 function updateBaddies() {
+    if (!gameStarted) return;
+
     baddies.forEach(baddie => {
         // If not moving, choose a new target
         if (!baddie.moving) {
@@ -322,16 +333,26 @@ function createPaths() {
 
     let svgContent = `<svg viewBox="0 0 ${GAME_WIDTH} ${GAME_HEIGHT}" xmlns="http://www.w3.org/2000/svg">`;
 
-    // Horizontal paths
+    // Draw short segments between adjacent grid points
     for (let row = 0; row < GRID_ROWS; row++) {
-        const y = GRID_OFFSET_Y + row * CELL_HEIGHT;
-        svgContent += `<line class="path-line" x1="${GRID_OFFSET_X}" y1="${y}" x2="${GAME_WIDTH - GRID_OFFSET_X}" y2="${y}"/>`;
-    }
+        for (let col = 0; col < GRID_COLS; col++) {
+            const pos = gridToPixel(col, row);
 
-    // Vertical paths
-    for (let col = 0; col < GRID_COLS; col++) {
-        const x = GRID_OFFSET_X + col * CELL_WIDTH;
-        svgContent += `<line class="path-line" x1="${x}" y1="${GRID_OFFSET_Y}" x2="${x}" y2="${GAME_HEIGHT - GRID_OFFSET_Y}"/>`;
+            // Skip if this position is blocked by card
+            if (isBlockedByCard(col, row)) continue;
+
+            // Draw segment to the right neighbor
+            if (col < GRID_COLS - 1 && !isBlockedByCard(col + 1, row)) {
+                const nextPos = gridToPixel(col + 1, row);
+                svgContent += `<line class="path-line" x1="${pos.x}" y1="${pos.y}" x2="${nextPos.x}" y2="${nextPos.y}"/>`;
+            }
+
+            // Draw segment to the bottom neighbor
+            if (row < GRID_ROWS - 1 && !isBlockedByCard(col, row + 1)) {
+                const nextPos = gridToPixel(col, row + 1);
+                svgContent += `<line class="path-line" x1="${pos.x}" y1="${pos.y}" x2="${nextPos.x}" y2="${nextPos.y}"/>`;
+            }
+        }
     }
 
     svgContent += '</svg>';
@@ -387,6 +408,11 @@ function highlightKey(key, active) {
 // Handle movement input - move one grid cell at a time
 function handleMovement(key) {
     if (player.moving) return;
+
+    // Start the game on first move
+    if (!gameStarted) {
+        gameStarted = true;
+    }
 
     let newCol = player.gridCol;
     let newRow = player.gridRow;
@@ -584,6 +610,7 @@ function restartGame() {
     score = 0;
     gameWon = false;
     gameOver = false;
+    gameStarted = false;
 
     // Remove win/lose message
     const message = document.querySelector('.win-message');
