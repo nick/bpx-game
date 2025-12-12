@@ -10,14 +10,54 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
     color: #ffffff;
     overflow: hidden;
+    position: relative;
+}
+
+.bg-orb {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.bg-orb-1 {
+    width: 800px;
+    height: 600px;
+    top: -200px;
+    left: -200px;
+    border-radius: 750px;
+    background: linear-gradient(180deg, rgba(255, 0, 183, 0.06) 0%, rgba(25, 0, 153, 0.06) 100%);
+    filter: blur(80px);
+}
+
+.bg-orb-2 {
+    width: 700px;
+    height: 500px;
+    top: 50%;
+    right: -150px;
+    border-radius: 670px;
+    background: conic-gradient(from 180deg at 50% 50%, rgba(0, 255, 60, 0.05) 0deg, rgba(153, 43, 0, 0.05) 360deg);
+    filter: blur(80px);
+}
+
+.bg-orb-3 {
+    width: 600px;
+    height: 450px;
+    bottom: -100px;
+    left: 30%;
+    border-radius: 605px;
+    background: linear-gradient(to bottom right, rgba(255, 0, 136, 0.05) 0%, rgba(255, 51, 0, 0.05) 50%) bottom right / 50% 50% no-repeat, linear-gradient(to bottom left, rgba(255, 0, 136, 0.05) 0%, rgba(255, 51, 0, 0.05) 50%) bottom left / 50% 50% no-repeat, linear-gradient(to top left, rgba(255, 0, 136, 0.05) 0%, rgba(255, 51, 0, 0.05) 50%) top left / 50% 50% no-repeat, linear-gradient(to top right, rgba(255, 0, 136, 0.05) 0%, rgba(255, 51, 0, 0.05) 50%) top right / 50% 50% no-repeat;
+    filter: blur(80px);
 }
 
 .game-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     padding: 20px;
     min-height: 100vh;
+    position: relative;
+    z-index: 1;
 }
 
 header {
@@ -26,15 +66,15 @@ header {
 }
 
 header h1 {
-    font-size: 1.8rem;
+    font-size: 2rem;
     font-weight: 500;
     letter-spacing: 0.5px;
-    margin-bottom: 8px;
+    margin-bottom: 14px;
 }
 
 header p {
     color: #6b7280;
-    font-size: 0.95rem;
+    font-size: 1.2rem;
 }
 
 .game-wrapper {
@@ -60,9 +100,8 @@ header p {
 
 #game-area {
     position: relative;
-    width: 800px;
+    width: 960px;
     height: 500px;
-    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a12 100%);
     border-radius: 12px;
     overflow: hidden;
 }
@@ -117,8 +156,9 @@ header p {
 }
 
 .icon-item svg {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
+    stroke-width: 1.5;
 }
 
 /* Icon colors matching the image */
@@ -157,12 +197,32 @@ header p {
 }
 
 #card img {
-    height: 140px;
+    height: 190px;
     width: auto;
     display: block;
     border-radius: 12px;
     border: 1px solid rgba(244, 244, 246, 0.05);
     box-shadow: 0 4px 40px 0 rgba(255, 255, 255, 0.05), 0 0 2px 0 rgba(255, 255, 255, 0.20) inset, 0 12px 12px 0 rgba(0, 0, 0, 0.20);
+}
+
+#start-prompt {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -150px);
+    z-index: 60;
+    color: #9ca3af;
+    font-size: 0.9rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+#start-prompt.hidden {
+    display: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
 }
 
 /* Player backpack */
@@ -180,14 +240,14 @@ header p {
 #player svg {
     width: 33px;
     height: 48px;
-    transition: transform 0.15s ease-out;
 }
 
 /* Direction rotations - mouth opens on the right side of the SVG, so rotate accordingly */
-#player.dir-right svg { transform: rotate(0deg); }
-#player.dir-down svg { transform: rotate(90deg); }
-#player.dir-left svg { transform: scaleX(-1); }
-#player.dir-up svg { transform: rotate(-90deg); }
+/* Use rotateY for 180 flips (no animation), rotate for 90 degree turns (animated) */
+#player.dir-right svg { transform: rotate(0deg); transition: transform 0.15s ease-out; }
+#player.dir-down svg { transform: rotate(90deg); transition: transform 0.15s ease-out; }
+#player.dir-left svg { transform: rotateY(180deg); transition: none; }
+#player.dir-up svg { transform: rotate(-90deg); transition: transform 0.15s ease-out; }
 
 /* Backpack parts for chomping */
 /* Pivot from the left side of the gap */
@@ -237,11 +297,13 @@ kbd.active {
 }
 
 /* Path styling */
-.path-line {
-    stroke: #2a2a4a;
-    stroke-width: 2;
-    stroke-dasharray: 4 4;
-    fill: none;
+.path-dot {
+    fill: #F99F1C;
+    opacity: 0.5;
+}
+
+.path-dot.hidden {
+    opacity: 0;
 }
 
 /* Win message */
@@ -312,6 +374,9 @@ kbd.active {
 .lose-message {
     border-color: #f87171 !important;
     padding: 20px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .lose-message video {

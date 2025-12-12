@@ -1,12 +1,12 @@
 // Game configuration
-const GAME_WIDTH = 800;
+const GAME_WIDTH = 960;
 const GAME_HEIGHT = 500;
 const PLAYER_SIZE = 48;
 const ICON_SIZE = 32;
 const COLLECT_DISTANCE = 30;
 
 // Grid configuration for icon placement
-const GRID_COLS = 8;
+const GRID_COLS = 9;
 const GRID_ROWS = 5;
 const GRID_OFFSET_X = 60;
 const GRID_OFFSET_Y = 50;
@@ -23,7 +23,7 @@ const ICON_TYPES = [
 
 // Movement speeds (pixels per frame)
 const PLAYER_SPEED = 3;
-const BADDIE_SPEED = 2;
+const BADDIE_SPEED = PLAYER_SPEED;
 
 // Baddie configuration
 const BADDIE_SIZE = 40;
@@ -42,7 +42,6 @@ let player = {
 };
 let icons = [];
 let baddies = [];
-let score = 0;
 let keysPressed = {};
 let lastKeyTime = 0;
 let gameLoop;
@@ -67,8 +66,10 @@ function isBlockedByCard(col, row) {
     // Grid gaps (including card positions)
     const blockedPositions = [
         [1, 1], [1, 3],
-        [6, 1], [6, 3],
-        [3, 2], [4, 2],
+        [3, 1], [4, 1], [5, 1],
+        [3, 3], [4, 3], [5, 3],
+        [7, 1], [7, 3],
+        [3, 2], [4, 2], [5, 2],
     ];
     return blockedPositions.some(([c, r]) => col === c && row === r);
 }
@@ -210,10 +211,10 @@ function createBaddies() {
 
         const baddieEl = document.createElement('div');
         baddieEl.className = 'baddie';
-        if (window.location.search.includes('phantom')) {
-            baddieEl.innerHTML = '<svg width="55" height="50" viewBox="45 45 110 95" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M89.1138 112.613C83.1715 121.719 73.2139 133.243 59.9641 133.243C53.7005 133.243 47.6777 130.665 47.6775 119.464C47.677 90.9369 86.6235 46.777 122.76 46.7764C143.317 46.776 151.509 61.0389 151.509 77.2361C151.509 98.0264 138.018 121.799 124.608 121.799C120.352 121.799 118.264 119.462 118.264 115.756C118.264 114.789 118.424 113.741 118.746 112.613C114.168 120.429 105.335 127.683 97.0638 127.683C91.0411 127.683 87.9898 123.895 87.9897 118.576C87.9897 116.642 88.3912 114.628 89.1138 112.613ZM115.936 68.7103C112.665 68.7161 110.435 71.4952 110.442 75.4598C110.449 79.4244 112.689 82.275 115.96 82.2693C119.152 82.2636 121.381 79.4052 121.374 75.4405C121.367 71.4759 119.128 68.7047 115.936 68.7103ZM133.287 68.6914C130.016 68.6972 127.786 71.4763 127.793 75.4409C127.8 79.4055 130.039 82.2561 133.311 82.2504C136.503 82.2448 138.732 79.3863 138.725 75.4216C138.718 71.457 136.479 68.6858 133.287 68.6914Z" fill="currentColor"></path></svg>';
-        } else {
+        if (window.location.search.includes('bear')) {
             baddieEl.textContent = '🐻';
+        } else {
+            baddieEl.innerHTML = '<svg width="55" height="50" viewBox="45 45 110 95" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M89.1138 112.613C83.1715 121.719 73.2139 133.243 59.9641 133.243C53.7005 133.243 47.6777 130.665 47.6775 119.464C47.677 90.9369 86.6235 46.777 122.76 46.7764C143.317 46.776 151.509 61.0389 151.509 77.2361C151.509 98.0264 138.018 121.799 124.608 121.799C120.352 121.799 118.264 119.462 118.264 115.756C118.264 114.789 118.424 113.741 118.746 112.613C114.168 120.429 105.335 127.683 97.0638 127.683C91.0411 127.683 87.9898 123.895 87.9897 118.576C87.9897 116.642 88.3912 114.628 89.1138 112.613ZM115.936 68.7103C112.665 68.7161 110.435 71.4952 110.442 75.4598C110.449 79.4244 112.689 82.275 115.96 82.2693C119.152 82.2636 121.381 79.4052 121.374 75.4405C121.367 71.4759 119.128 68.7047 115.936 68.7103ZM133.287 68.6914C130.016 68.6972 127.786 71.4763 127.793 75.4409C127.8 79.4055 130.039 82.2561 133.311 82.2504C136.503 82.2448 138.732 79.3863 138.725 75.4216C138.718 71.457 136.479 68.6858 133.287 68.6914Z" fill="currentColor"></path></svg>';
         }
         baddieEl.style.left = (pixelPos.x - BADDIE_SIZE / 2) + 'px';
         baddieEl.style.top = (pixelPos.y - BADDIE_SIZE / 2) + 'px';
@@ -231,33 +232,46 @@ function startBaddieMovement() {
 
 // Choose next target for a baddie
 function chooseBaddieTarget(baddie) {
-    // Calculate direction to player
-    const dx = player.gridCol - baddie.gridCol;
-    const dy = player.gridRow - baddie.gridRow;
+    const playerCol = player.moving ? player.targetCol : player.gridCol;
+    const playerRow = player.moving ? player.targetRow : player.gridRow;
 
-    // Possible moves towards player
-    const moves = [];
-    if (dx > 0 && isValidBaddiePosition(baddie.gridCol + 1, baddie.gridRow, baddie)) {
-        moves.push({ col: baddie.gridCol + 1, row: baddie.gridRow, priority: Math.abs(dx) });
-    }
-    if (dx < 0 && isValidBaddiePosition(baddie.gridCol - 1, baddie.gridRow, baddie)) {
-        moves.push({ col: baddie.gridCol - 1, row: baddie.gridRow, priority: Math.abs(dx) });
-    }
-    if (dy > 0 && isValidBaddiePosition(baddie.gridCol, baddie.gridRow + 1, baddie)) {
-        moves.push({ col: baddie.gridCol, row: baddie.gridRow + 1, priority: Math.abs(dy) });
-    }
-    if (dy < 0 && isValidBaddiePosition(baddie.gridCol, baddie.gridRow - 1, baddie)) {
-        moves.push({ col: baddie.gridCol, row: baddie.gridRow - 1, priority: Math.abs(dy) });
+    
+    // Check what axis the other baddie is moving on (for tiebreaker only)
+    const otherBaddie = baddies.find(b => b !== baddie);
+    const otherClosingHorizontally = otherBaddie && otherBaddie.moving && otherBaddie.targetCol !== otherBaddie.gridCol;
+    const otherClosingVertically = otherBaddie && otherBaddie.moving && otherBaddie.targetRow !== otherBaddie.gridRow;
+
+    // All four possible moves
+    const allMoves = [
+        { col: baddie.gridCol + 1, row: baddie.gridRow, axis: 'h' },
+        { col: baddie.gridCol - 1, row: baddie.gridRow, axis: 'h' },
+        { col: baddie.gridCol, row: baddie.gridRow + 1, axis: 'v' },
+        { col: baddie.gridCol, row: baddie.gridRow - 1, axis: 'v' }
+    ];
+
+    // Score each move
+    const scoredMoves = [];
+    for (const move of allMoves) {
+        if (!isValidBaddiePosition(move.col, move.row, baddie)) continue;
+
+        const newDist = Math.abs(playerCol - move.col) + Math.abs(playerRow - move.row);
+
+        // Primary score: distance to player (lower is better, so invert)
+        let priority = 1000 - newDist * 100;
+
+        // Tiebreaker: prefer opposite axis from other baddie (pincer)
+        if (move.axis === 'h' && otherClosingVertically) priority += 1;
+        if (move.axis === 'v' && otherClosingHorizontally) priority += 1;
+
+        scoredMoves.push({ ...move, priority });
     }
 
-    if (moves.length > 0) {
-        // Sort by priority (prefer the axis with greater distance)
-        moves.sort((a, b) => b.priority - a.priority);
-        // Add some randomness
-        const move = Math.random() < 0.7 ? moves[0] : moves[Math.floor(Math.random() * moves.length)];
+    // Sort by priority and pick the best
+    scoredMoves.sort((a, b) => b.priority - a.priority);
 
-        baddie.targetCol = move.col;
-        baddie.targetRow = move.row;
+    if (scoredMoves.length > 0) {
+        baddie.targetCol = scoredMoves[0].col;
+        baddie.targetRow = scoredMoves[0].row;
         baddie.moving = true;
     }
 }
@@ -327,30 +341,61 @@ function checkBaddieCollision() {
     return false;
 }
 
-// Create connecting paths between icons
+// Create uniform grid of dots
 function createPaths() {
     const pathsLayer = document.getElementById('paths-layer');
+    const dotSpacing = 16;
 
     let svgContent = `<svg viewBox="0 0 ${GAME_WIDTH} ${GAME_HEIGHT}" xmlns="http://www.w3.org/2000/svg">`;
 
-    // Draw short segments between adjacent grid points
+    // Helper to check if position has an icon
+    function hasIconAt(c, r) {
+        if (c === 0 && r === 0) return false; // start position
+        if (isBlockedByCard(c, r)) return false;
+        return true;
+    }
+
+    // Draw uniform dots between all grid points
     for (let row = 0; row < GRID_ROWS; row++) {
         for (let col = 0; col < GRID_COLS; col++) {
-            const pos = gridToPixel(col, row);
-
             // Skip if this position is blocked by card
             if (isBlockedByCard(col, row)) continue;
 
-            // Draw segment to the right neighbor
+            const pos = gridToPixel(col, row);
+            const hasIcon = hasIconAt(col, row);
+
+            // Add dot at the grid position (hidden if there's an icon)
+            const hidden = hasIcon ? ' hidden' : '';
+            svgContent += `<circle class="path-dot grid-dot${hidden}" cx="${pos.x}" cy="${pos.y}" r="2" data-col="${col}" data-row="${row}"/>`;
+
+            // Draw dots to the right neighbor
             if (col < GRID_COLS - 1 && !isBlockedByCard(col + 1, row)) {
                 const nextPos = gridToPixel(col + 1, row);
-                svgContent += `<line class="path-line" x1="${pos.x}" y1="${pos.y}" x2="${nextPos.x}" y2="${nextPos.y}"/>`;
+                const numDots = Math.floor((nextPos.x - pos.x) / dotSpacing);
+                const hideLeft = hasIcon;
+                const hideRight = hasIconAt(col + 1, row);
+                for (let i = 1; i <= numDots; i++) {
+                    const dotX = pos.x + i * (nextPos.x - pos.x) / (numDots + 1);
+                    const nearLeft = i === 1 && hideLeft;
+                    const nearRight = i === numDots && hideRight;
+                    const dotHidden = (nearLeft || nearRight) ? ' hidden' : '';
+                    svgContent += `<circle class="path-dot grid-dot${dotHidden}" cx="${dotX}" cy="${pos.y}" r="2" data-col="${nearLeft ? col : (nearRight ? col + 1 : -1)}" data-row="${row}"/>`;
+                }
             }
 
-            // Draw segment to the bottom neighbor
+            // Draw dots to the bottom neighbor
             if (row < GRID_ROWS - 1 && !isBlockedByCard(col, row + 1)) {
                 const nextPos = gridToPixel(col, row + 1);
-                svgContent += `<line class="path-line" x1="${pos.x}" y1="${pos.y}" x2="${nextPos.x}" y2="${nextPos.y}"/>`;
+                const numDots = Math.floor((nextPos.y - pos.y) / dotSpacing);
+                const hideTop = hasIcon;
+                const hideBottom = hasIconAt(col, row + 1);
+                for (let i = 1; i <= numDots; i++) {
+                    const dotY = pos.y + i * (nextPos.y - pos.y) / (numDots + 1);
+                    const nearTop = i === 1 && hideTop;
+                    const nearBottom = i === numDots && hideBottom;
+                    const dotHidden = (nearTop || nearBottom) ? ' hidden' : '';
+                    svgContent += `<circle class="path-dot grid-dot${dotHidden}" cx="${pos.x}" cy="${dotY}" r="2" data-col="${col}" data-row="${nearTop ? row : (nearBottom ? row + 1 : -1)}"/>`;
+                }
             }
         }
     }
@@ -383,59 +428,98 @@ function setupControls() {
         keysPressed[keyLower] = false;
         highlightKey(keyLower, false);
     });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (gameOver || gameWon)) {
+            restartGame();
+        }
+    });
 }
 
-// Highlight keyboard keys in the instructions
+// Highlight keyboard keys in the instructions (only arrow keys)
 function highlightKey(key, active) {
     let direction = null;
-    if (key === 'arrowup' || key === 'w') direction = 'up';
-    else if (key === 'arrowdown' || key === 's') direction = 'down';
-    else if (key === 'arrowleft' || key === 'a') direction = 'left';
-    else if (key === 'arrowright' || key === 'd') direction = 'right';
+    if (key === 'arrowup') direction = 'up';
+    else if (key === 'arrowdown') direction = 'down';
+    else if (key === 'arrowleft') direction = 'left';
+    else if (key === 'arrowright') direction = 'right';
 
     if (direction) {
-        const keys = document.querySelectorAll(`kbd[data-key="${direction}"]`);
-        keys.forEach(kbd => {
+        const kbd = document.querySelector(`kbd[data-key="${direction}"]`);
+        if (kbd) {
             if (active) {
                 kbd.classList.add('active');
             } else {
                 kbd.classList.remove('active');
             }
-        });
+        }
     }
 }
 
 // Handle movement input - move one grid cell at a time
 function handleMovement(key) {
-    if (player.moving) return;
-
     // Start the game on first move
     if (!gameStarted) {
         gameStarted = true;
+        const startPrompt = document.getElementById('start-prompt');
+        if (startPrompt) startPrompt.classList.add('hidden');
     }
 
-    let newCol = player.gridCol;
-    let newRow = player.gridRow;
     let newDirection = player.direction;
 
     if (key === 'arrowup' || key === 'w') {
-        newRow--;
         newDirection = 'up';
     } else if (key === 'arrowdown' || key === 's') {
-        newRow++;
         newDirection = 'down';
     } else if (key === 'arrowleft' || key === 'a') {
-        newCol--;
         newDirection = 'left';
     } else if (key === 'arrowright' || key === 'd') {
-        newCol++;
         newDirection = 'right';
     } else {
         return;
     }
 
-    // Update direction even if we can't move
-    setPlayerDirection(newDirection);
+    // If already moving, allow reversing direction
+    if (player.moving) {
+        // Check if pressing opposite of current movement direction
+        const movingRight = player.targetCol > player.gridCol;
+        const movingLeft = player.targetCol < player.gridCol;
+        const movingDown = player.targetRow > player.gridRow;
+        const movingUp = player.targetRow < player.gridRow;
+
+        const isReversing =
+            (newDirection === 'left' && movingRight) ||
+            (newDirection === 'right' && movingLeft) ||
+            (newDirection === 'up' && movingDown) ||
+            (newDirection === 'down' && movingUp);
+
+        if (isReversing) {
+            // Swap current position and target
+            const oldTargetCol = player.targetCol;
+            const oldTargetRow = player.targetRow;
+            player.targetCol = player.gridCol;
+            player.targetRow = player.gridRow;
+            player.gridCol = oldTargetCol;
+            player.gridRow = oldTargetRow;
+            // Update direction when reversing
+            setPlayerDirection(newDirection);
+        }
+        return;
+    }
+
+    // Calculate new target based on direction
+    let newCol = player.gridCol;
+    let newRow = player.gridRow;
+
+    if (newDirection === 'up') {
+        newRow--;
+    } else if (newDirection === 'down') {
+        newRow++;
+    } else if (newDirection === 'left') {
+        newCol--;
+    } else if (newDirection === 'right') {
+        newCol++;
+    }
 
     // Check if new position is valid
     if (isValidPosition(newCol, newRow)) {
@@ -443,6 +527,8 @@ function handleMovement(key) {
         player.targetRow = newRow;
         player.moving = true;
         setPlayerMoving(true);
+        // Only update direction when actually starting to move
+        setPlayerDirection(newDirection);
     }
 }
 
@@ -549,8 +635,9 @@ function checkCollisions() {
 function collectIcon(icon) {
     icon.collected = true;
     icon.element.classList.add('collected');
-    score += 10;
-    updateScore();
+
+    // Reveal dots immediately
+    revealDotsAtPosition(icon.col, icon.row);
 
     // Remove element after animation
     setTimeout(() => {
@@ -558,10 +645,12 @@ function collectIcon(icon) {
     }, 400);
 }
 
-// Update score display
-function updateScore() {
-    document.getElementById('score').textContent = score;
+// Reveal hidden dots at a collected icon position
+function revealDotsAtPosition(col, row) {
+    const dots = document.querySelectorAll(`.grid-dot[data-col="${col}"][data-row="${row}"]`);
+    dots.forEach(dot => dot.classList.remove('hidden'));
 }
+
 
 // Win the game
 function winGame() {
@@ -572,7 +661,6 @@ function winGame() {
     winMessage.className = 'win-message';
     winMessage.innerHTML = `
         <h2>You Win!</h2>
-        <p>Final Score: ${score}</p>
         <button onclick="restartGame()">Play Again</button>
     `;
     gameArea.appendChild(winMessage);
@@ -607,7 +695,6 @@ function restartGame() {
     player.x = startPos.x;
     player.y = startPos.y;
 
-    score = 0;
     gameWon = false;
     gameOver = false;
     gameStarted = false;
@@ -617,14 +704,18 @@ function restartGame() {
     if (message) message.remove();
 
     // Reset UI
-    updateScore();
     updatePlayerPosition();
     setPlayerDirection('right');
     setPlayerMoving(false);
     createGrid();
+    createPaths();
     createBaddies();
     lucide.createIcons();
     startBaddieMovement();
+
+    // Show start prompt again
+    const startPrompt = document.getElementById('start-prompt');
+    if (startPrompt) startPrompt.classList.remove('hidden');
 }
 
 // Utility: Shuffle array
